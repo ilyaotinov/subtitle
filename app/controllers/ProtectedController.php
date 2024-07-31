@@ -22,6 +22,8 @@ class ProtectedController extends Controller
             'except' => [
                 'login',
                 'options',
+                'debug',
+                'index',
             ],
         ];
 

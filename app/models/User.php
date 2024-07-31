@@ -2,44 +2,21 @@
 
 namespace app\models;
 
+use kaabar\jwt\Jwt;
 use Lcobucci\JWT\Token;
+use Yii;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
 /**
- * @author Otinov Ilya
+ * @property int $id
+ * @property string $login
+ * @property string $password
+ * @property string $email
+ * @property string $username
  */
 class User extends ActiveRecord implements IdentityInterface
 {
-    /** @var int Идентификатор пользователя */
-    public int $id;
-
-    /** @var string $login Логин пользователя */
-    public string $login;
-
-    /** @var string Хэш пароля */
-    public string $password;
-
-    /** @var string E-mail пользователя */
-    public string $email;
-
-    private static $users = [
-        '100' => [
-            'id' => '100',
-            'username' => 'admin',
-            'password' => 'admin',
-            'authKey' => 'test100key',
-            'accessToken' => '100-token',
-        ],
-        '101' => [
-            'id' => '101',
-            'username' => 'demo',
-            'password' => 'demo',
-            'authKey' => 'test101key',
-            'accessToken' => '101-token',
-        ],
-    ];
-
     /**
      * @return string
      */
@@ -48,26 +25,31 @@ class User extends ActiveRecord implements IdentityInterface
         return 'users';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public static function findIdentity($id): ?static
     {
-        return isset(self::$users[$id]) ? new static (self::$users[$id]) : null;
+        /** @var static|null */
+        return static::find()
+            ->where('id=:id', [':id' => $id])
+            ->one();
     }
 
     /**
-     * @param Token $token
+     * @param $token
+     * @param $type
+     *
+     * @return static|null
      */
-    public static function findIdentityByAccessToken($token, $type = null): ?static
+    public static function findIdentityByAccessToken($token, $type = null): static|null
     {
-        foreach (self::$users as $user) {
-            if ($user['id'] === $token->getClaim('uid')) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        /** @var Jwt $jwt */
+        $jwt = Yii::$app->jwt;
+        /** @var Token\Plain|null $token */
+        $token = $jwt->loadToken($token);
+        /** @var static|null */
+        return static::find()
+            ->where(['id' => $token->claims()->get('uid')])
+            ->andWhere('status!=:status', [':status' => 'inactive'])
+            ->one();
     }
 
     /**
@@ -77,15 +59,9 @@ class User extends ActiveRecord implements IdentityInterface
      *
      * @return static|null
      */
-    public static function findByUsername($username): ?static
+    public static function findByUsername(string $username): ?static
     {
-        foreach (self::$users as $user) {
-            if (strcasecmp($user['username'], $username) === 0) {
-                return new static($user);
-            }
-        }
-
-        return null;
+        return static::findOne(['login' => $username]);
     }
 
     /**
@@ -99,18 +75,15 @@ class User extends ActiveRecord implements IdentityInterface
     /**
      * {@inheritdoc}
      */
-    public function getAuthKey()
+    public function getAuthKey(): ?string
     {
-        return $this->authKey;
+        return '';
     }
 
-    /**
-     * {@inheritdoc}
-     */
     public function validateAuthKey(
         $authKey,
-    ) {
-        return $this->authKey === $authKey;
+    ): bool {
+        return true;
     }
 
     /**
@@ -121,8 +94,23 @@ class User extends ActiveRecord implements IdentityInterface
      * @return bool if password provided is valid for current user
      */
     public function validatePassword(
-        $password,
-    ) {
-        return $this->password === $password;
+        string $password,
+    ): bool {
+        return Yii::$app->security->validatePassword($password, $this->password);
+    }
+
+    /**
+     * @param $insert
+     * @param $changedAttributes
+     *
+     * @return void
+     */
+    public function afterSave($insert, $changedAttributes): void
+    {
+        if (array_key_exists('password', $changedAttributes)) {
+            UserRefreshToken::deleteAll(['user_id' => $this->id]);
+        }
+
+        parent::afterSave($insert, $changedAttributes);
     }
 }

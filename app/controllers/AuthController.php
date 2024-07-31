@@ -5,42 +5,48 @@ namespace app\controllers;
 use app\models\LoginForm;
 use app\models\User;
 use app\models\UserRefreshToken;
+use DateTimeImmutable;
+use kaabar\jwt\Jwt;
 use Yii;
 use yii\web\Cookie;
 use yii\web\ServerErrorHttpException;
 use yii\web\UnauthorizedHttpException;
 
+/**
+ * @author Otinov Ilya
+ */
 class AuthController extends ProtectedController
 {
-    /**
-     * @param User $user
-     *
-     * @return mixed
-     */
-    private function generateJwt(User $user)
+    private function generateJwt(User $user): string
     {
+        /** @var Jwt $jwt */
         $jwt = Yii::$app->jwt;
         $signer = $jwt->getSigner('HS256');
         $key = $jwt->getKey();
-        $time = time();
+
+        $now = new DateTimeImmutable();
 
         $jwtParams = Yii::$app->params['jwt'];
 
-        return $jwt->getBuilder()
+        $token = $jwt->getBuilder()
             ->issuedBy($jwtParams['issuer'])
             ->permittedFor($jwtParams['audience'])
-            ->identifiedBy($jwtParams['id'], true)
-            ->issuedAt($time)
-            ->expiresAt($time + $jwtParams['expire'])
+            ->identifiedBy($jwtParams['id'])
+            ->issuedAt($now)
+            ->canOnlyBeUsedAfter($now->modify($jwtParams['request_time']))
+            ->expiresAt($now->modify($jwtParams['expire']))
             ->withClaim('uid', $user->id)
             ->getToken($signer, $key);
+
+        return $token->toString();
     }
 
     /**
      * @throws yii\base\Exception
      */
-    private function generateRefreshToken(User $user): UserRefreshToken
-    {
+    private function generateRefreshToken(
+        User $user,
+    ): UserRefreshToken {
         $refreshToken = Yii::$app->security->generateRandomString(200);
 
         // TODO: Don't always regenerate - you could reuse existing one if user already has one with same IP and user agent
@@ -48,12 +54,12 @@ class AuthController extends ProtectedController
             'user_id' => $user->id,
             'token' => $refreshToken,
             'ip' => Yii::$app->request->userIP,
-            'user_agent' => Yii::$app->request->userAgent,
+            'agent' => Yii::$app->request->userAgent,
             'created_at' => gmdate('Y-m-d H:i:s'),
         ]);
         if (! $userRefreshToken->save()) {
             throw new ServerErrorHttpException(
-                message: 'Failed to save the refresh token: ' . implode(
+                'Failed to save the refresh token: ' . implode(
                     separator: "\n",
                     array: $userRefreshToken->getErrorSummary(true),
                 ),
@@ -77,19 +83,18 @@ class AuthController extends ProtectedController
     public function actionLogin()
     {
         $model = new LoginForm();
-        if ($model->load(Yii::$app->request->getBodyParams()) && $model->login()) {
+        if ($model->load(Yii::$app->request->getBodyParams(), 'data') && $model->login()) {
             $user = Yii::$app->user->identity;
 
             $token = $this->generateJwt($user);
 
-            $this->generateRefreshToken($user);
-
             return [
                 'user' => $user,
-                'token' => (string) $token,
+                'token' => $token,
             ];
         } else {
-            return $model->getFirstErrors();
+            $model->validate();
+            return $model;
         }
     }
 
@@ -109,10 +114,10 @@ class AuthController extends ProtectedController
 
             /** @var User $user */
             $user = User::find()
-                ->where(['id' => $userRefreshToken->user_id])
-                ->andWhere(['not', ['status' => 'inactive']])
+                ->where(['userID' => $userRefreshToken->user_id])
+                ->andWhere(['not', ['usr_status' => 'inactive']])
                 ->one();
-            if ($user === null) {
+            if (! $user) {
                 $userRefreshToken->delete();
                 return new UnauthorizedHttpException('The user is inactive.');
             }
@@ -121,7 +126,7 @@ class AuthController extends ProtectedController
 
             return [
                 'status' => 'ok',
-                'token' => (string) $token,
+                'token' => $token,
             ];
         } elseif (Yii::$app->request->getMethod() == 'DELETE') {
             if ($userRefreshToken && ! $userRefreshToken->delete()) {

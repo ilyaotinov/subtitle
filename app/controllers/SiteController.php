@@ -2,47 +2,17 @@
 
 namespace app\controllers;
 
-use kaabar\jwt\JwtHttpBearerAuth;
+use app\models\User;
+use PDO;
+use PDOException;
 use Yii;
-use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\web\Response;
-use yii\filters\VerbFilter;
 use app\models\LoginForm;
 use app\models\ContactForm;
 
 class SiteController extends Controller
 {
-    /**
-     * {@inheritdoc}
-     */
-    public function behaviors(): array
-    {
-        return [
-            'access' => [
-                'class' => AccessControl::class,
-                'only' => ['logout'],
-                'rules' => [
-                    [
-                        'actions' => ['logout'],
-                        'allow' => true,
-                        'roles' => ['@'],
-                    ],
-                ],
-            ],
-            'verbs' => [
-                'class' => VerbFilter::class,
-                'actions' => [
-                    'logout' => ['post'],
-                ],
-            ],
-            'authenticator' => [
-                'class' => JwtHttpBearerAuth::class,
-                'except' => ['login', 'refresh-token', 'options'],
-            ],
-        ];
-    }
-
     /**
      * {@inheritdoc}
      */
