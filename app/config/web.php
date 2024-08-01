@@ -1,6 +1,7 @@
 <?php
 
 use kaabar\jwt\Jwt;
+use yii\rest\UrlRule;
 use yii\symfonymailer\Mailer;
 use yii\web\JsonParser;
 
@@ -52,6 +53,11 @@ $config = [
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
+            'enableStrictParsing' => true,
+            'rules' => [
+                'GET auth/login' => 'auth/login',
+                'GET /' => 'site/index',
+            ],
         ],
 
         'jwt' => [

@@ -2,9 +2,6 @@
 
 namespace app\controllers;
 
-use app\models\User;
-use PDO;
-use PDOException;
 use Yii;
 use yii\web\Controller;
 use yii\web\Response;
@@ -16,7 +13,7 @@ class SiteController extends Controller
     /**
      * {@inheritdoc}
      */
-    public function actions()
+    public function actions(): array
     {
         return [
             'error' => [
@@ -29,12 +26,7 @@ class SiteController extends Controller
         ];
     }
 
-    /**
-     * Displays homepage.
-     *
-     * @return string
-     */
-    public function actionIndex()
+    public function actionIndex(): string
     {
         return $this->render('index');
     }
@@ -44,7 +36,7 @@ class SiteController extends Controller
      *
      * @return Response|string
      */
-    public function actionLogin()
+    public function actionLogin(): string
     {
         if (! Yii::$app->user->isGuest) {
             return $this->goHome();
