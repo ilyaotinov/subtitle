@@ -24,6 +24,7 @@ class ProtectedController extends Controller
                 'options',
                 'debug',
                 'index',
+                'refresh-token',
             ],
         ];
 

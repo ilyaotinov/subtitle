@@ -7,27 +7,16 @@ use Exception;
 use yii\db\ActiveRecord;
 
 /**
- * @author Otinov Ilya
+ * @property int $id
+ * @property int $user_id;
+ * @property string $token;
+ * @property string $ip;
+ * @property string $agent;
+ * @property DateTime|string $created_at;
  */
 class UserRefreshToken extends ActiveRecord
 {
-    /** @var int Идентификатор */
-    public int $id;
 
-    /** @var int Идентификатор связанного пользователя */
-    public int $user_id;
-
-    /** @var string Токен */
-    public string $token;
-
-    /** @var string IP пользователя с которого был получен токен */
-    public string $ip;
-
-    /** @var string устройство пользователя, с которого был получен токен */
-    public string $agent;
-
-    /** @var DateTime|string Дата создания */
-    public DateTime|string $created_at;
 
     /**
      * @return string

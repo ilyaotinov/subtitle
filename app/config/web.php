@@ -1,7 +1,8 @@
 <?php
 
+use app\services\auth\AuthService;
+use app\services\jwt\JWTTokenService;
 use kaabar\jwt\Jwt;
-use yii\rest\UrlRule;
 use yii\symfonymailer\Mailer;
 use yii\web\JsonParser;
 
@@ -15,6 +16,14 @@ $config = [
     'aliases' => [
         '@bower' => '@vendor/bower-asset',
         '@npm' => '@vendor/npm-asset',
+    ],
+    'container' => [
+        'definitions' => [
+            AuthService::class => function () {
+                $jwt = new JWTTokenService();
+                return new AuthService($jwt);
+            },
+        ],
     ],
     'components' => [
         'request' => [
@@ -55,8 +64,9 @@ $config = [
             'showScriptName' => false,
             'enableStrictParsing' => true,
             'rules' => [
-                'GET auth/login' => 'auth/login',
+                'POST auth/login' => 'auth/login',
                 'GET /' => 'site/index',
+                'POST,DELETE auth/refresh-token' => 'auth/refresh-token',
             ],
         ],
 
