@@ -18,7 +18,7 @@ use yii\web\UnauthorizedHttpException;
  */
 class AuthController extends ProtectedController
 {
-    public function __construct($id, $module, private AuthService $authService, $config = [])
+    public function __construct($id, $module, private readonly AuthService $authService, $config = [])
     {
         parent::__construct($id, $module, $config);
     }

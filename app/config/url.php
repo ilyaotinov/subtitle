@@ -9,5 +9,6 @@ return [
         'GET /' => 'site/index',
         'GET auth/refresh-token' => 'auth/refresh-token',
         'DELETE auth/refresh-token' => 'auth/delete-refresh-token',
+        'POST users/register' => 'user/register'
     ],
 ];

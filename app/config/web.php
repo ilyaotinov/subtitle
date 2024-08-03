@@ -9,6 +9,7 @@ use yii\web\JsonParser;
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
 $url = require_once __DIR__ . '/url.php';
+$container = require_once __DIR__ . '/container.php';
 
 $config = [
     'id' => 'basic',
@@ -18,14 +19,7 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm' => '@vendor/npm-asset',
     ],
-    'container' => [
-        'definitions' => [
-            AuthService::class => function () {
-                $jwt = new JWTTokenService();
-                return new AuthService($jwt);
-            },
-        ],
-    ],
+    'container' => $container,
     'components' => [
         'request' => [
             'cookieValidationKey' => 'vGYSbP_DiYTbiZp0QOaaeHhdw3Ik4RAT',
