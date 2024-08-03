@@ -26,6 +26,7 @@ class ProtectedController extends Controller
                 'index',
                 'refresh-token',
                 'delete-refresh-token',
+                'register'
             ],
         ];
 

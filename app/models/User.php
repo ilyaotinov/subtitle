@@ -5,6 +5,7 @@ namespace app\models;
 use kaabar\jwt\Jwt;
 use Lcobucci\JWT\Token;
 use Yii;
+use yii\base\Exception;
 use yii\db\ActiveRecord;
 use yii\web\IdentityInterface;
 
@@ -25,7 +26,31 @@ class User extends ActiveRecord implements IdentityInterface
             [['login', 'email', 'password'], 'required'],
             [['login'], 'string', 'max' => 255],
             [['email'], 'email'],
+            [['login'], 'validateLogin'],
+            [['email'], 'validateEmail'],
         ];
+    }
+
+    public function validateEmail($attribute, $params, $validator): void
+    {
+        $query = static::find()->where(['email' => $this->email]);
+        if (!$this->isNewRecord) {
+            $query->andWhere(['not', ['id' => $this->id]]);
+        }
+        if ($query->exists()) {
+            $this->addError($attribute, 'This email address has already been taken.');
+        }
+    }
+
+    public function validateLogin($attribute, $params, $validator): void
+    {
+        $query = static::find()->where(['login' => $this->login]);
+        if (!$this->isNewRecord) {
+            $query->andWhere(['not', ['id' => $this->id]]);
+        }
+        if ($query->exists()) {
+            $this->addError($attribute, 'This login has already been taken.');
+        }
     }
 
     /**
@@ -131,5 +156,14 @@ class User extends ActiveRecord implements IdentityInterface
     public static function create(): static
     {
         return new static();
+    }
+
+    /**
+     * @throws Exception
+     */
+    public function setPassword(string $password): static
+    {
+        $this->password = Yii::$app->security->generatePasswordHash($password);
+        return $this;
     }
 }

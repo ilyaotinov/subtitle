@@ -10,7 +10,7 @@ class m240730_044921_create_user_refresh_tokens_table extends Migration
     /**
      * {@inheritdoc}
      */
-    public function safeUp()
+    public function safeUp(): void
     {
         $this->createTable('{{%user_refresh_tokens}}', [
             'id' => $this->bigPrimaryKey()->notNull()->unsigned(),
@@ -26,14 +26,17 @@ class m240730_044921_create_user_refresh_tokens_table extends Migration
             'user_refresh_tokens',
             'user_id',
             'users',
-            'id'
+            'id',
+            'CASCADE',
+            'CASCADE',
+
         );
     }
 
     /**
      * {@inheritdoc}
      */
-    public function safeDown()
+    public function safeDown(): void
     {
         $this->dropTable('{{%user_refresh_tokens}}');
     }
