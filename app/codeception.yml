@@ -1,17 +1,26 @@
 actor: Tester
 bootstrap: _bootstrap.php
 paths:
-    tests: tests
-    output: tests/_output
-    data: tests/_data
-    helpers: tests/_support
+  tests: tests
+  output: tests/_output
+  data: tests/_data
+  helpers: tests/_support
 settings:
-    memory_limit: 1024M
-    colors: true
+  memory_limit: 1024M
+  colors: true
 modules:
-    config:
-        Yii2:
-            configFile: 'config/test.php'
+  enabled:
+    - Asserts
+    - Db
+  config:
+    Yii2:
+      configFile: 'config/test.php'
+    Db:
+      dsn: 'mysql:host=db;dbname=subtitle'
+      user: 'ilya'
+      password: '123'
+      populate: true
+      cleanup: true
 
 # To enable code coverage:
 #coverage:

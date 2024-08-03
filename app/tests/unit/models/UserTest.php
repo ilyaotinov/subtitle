@@ -1,44 +1,40 @@
 <?php
 
-namespace tests\unit\models;
+namespace Unit\models;
 
 use app\models\User;
+use Codeception\Specify;
+use Codeception\Test\Unit;
+use \UnitTester;
 
-class UserTest extends \Codeception\Test\Unit
+class UserTest extends Unit
 {
-    public function testFindUserById()
+    use Specify;
+
+    protected UnitTester $tester;
+
+    protected function _before() {}
+
+    public function testValidation()
     {
-        verify($user = User::findIdentity(100))->notEmpty();
-        verify($user->username)->equals('admin');
+        $user = User::create();
+        $user->login = 'simple login';
+        $this->assertTrue($user->validate(['login']));
+        $user->login = '1343949493994993493493949394943943934943939
+            34939493949393494399493949394fsdkfskdjfskdfjskdjfklsdjfalksjlsdja
+            sadfkljskladjfklsadjfklsajdflasjdfkldsajlfjasdlfkjsldfjakldfjlask
+            sadflkjsalkdjfalskdjfaklsdjflkasdjflkasjdflkasjdflkajsdflkjsadlkf
+            asdlkfjskldjfaklsjdfklasjdflkasjfdklajsdflkjasldkfjaslkdjflaksdfj
+            askdljfaskljfklsajdfkljsadfkljsadlfkjasdlfjasdklfjaslkdfjaskldfjs
+            klsdjfklsajdflkjsdklfajsdklfjaslkdfjalsjfdlkasjdflkasjdflkasjdfkl
+            asldkflskdjafkljasdklfjasldkfjslkdxcmvnzxm,cvnmz,xcvnxm,cvnm,nksd
+            dofiguidofsugpdfugiposdufgpoisudfgoidusfopgiusdoifgusdiofguiopdss
+            weqrjkwqehrqwkjehrqwophjosqdhfsiqjdbfniqwefbqiuwfberiubfuieqrbfiu';
+        $this->assertFalse($user->validate(['login']));
 
-        verify(User::findIdentity(999))->empty();
+        $user->email = 'example@example.com';
+        $this->assertTrue($user->validate('email'));
+        $user->email = 'invalid-email';
+        $this->assertFalse($user->validate('email'));
     }
-
-    public function testFindUserByAccessToken()
-    {
-        verify($user = User::findIdentityByAccessToken('100-token'))->notEmpty();
-        verify($user->username)->equals('admin');
-
-        verify(User::findIdentityByAccessToken('non-existing'))->empty();        
-    }
-
-    public function testFindUserByUsername()
-    {
-        verify($user = User::findByUsername('admin'))->notEmpty();
-        verify(User::findByUsername('not-admin'))->empty();
-    }
-
-    /**
-     * @depends testFindUserByUsername
-     */
-    public function testValidateUser()
-    {
-        $user = User::findByUsername('admin');
-        verify($user->validateAuthKey('test100key'))->notEmpty();
-        verify($user->validateAuthKey('test102key'))->empty();
-
-        verify($user->validatePassword('admin'))->notEmpty();
-        verify($user->validatePassword('123456'))->empty();        
-    }
-
 }

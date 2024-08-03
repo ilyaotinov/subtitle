@@ -1,10 +1,14 @@
 <?php
 
+use app\services\auth\AuthService;
+use app\services\jwt\JWTTokenService;
 use kaabar\jwt\Jwt;
 use yii\symfonymailer\Mailer;
+use yii\web\JsonParser;
 
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
+$url = require_once __DIR__ . '/url.php';
 
 $config = [
     'id' => 'basic',
@@ -14,10 +18,20 @@ $config = [
         '@bower' => '@vendor/bower-asset',
         '@npm' => '@vendor/npm-asset',
     ],
+    'container' => [
+        'definitions' => [
+            AuthService::class => function () {
+                $jwt = new JWTTokenService();
+                return new AuthService($jwt);
+            },
+        ],
+    ],
     'components' => [
         'request' => [
-            // !!! insert a secret key in the following (if it is empty) - this is required by cookie validation
             'cookieValidationKey' => 'vGYSbP_DiYTbiZp0QOaaeHhdw3Ik4RAT',
+            'parsers' => [
+                'application/json' => JsonParser::class,
+            ],
         ],
         'cache' => [
             'class' => 'yii\caching\FileCache',
@@ -46,15 +60,10 @@ $config = [
             ],
         ],
         'db' => $db,
-        'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'rules' => [
-            ],
-        ],
+        'urlManager' => $url,
         'jwt' => [
             'class' => Jwt::class,
-            'key' => 'SECRET-KEY',
+            'key' => 'it-is-my-secret-key-and-it-is-long-enough-to-be-secure',
         ],
     ],
     'params' => $params,
@@ -66,14 +75,14 @@ if (YII_ENV_DEV) {
     $config['modules']['debug'] = [
         'class' => 'yii\debug\Module',
         // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
+        'allowedIPs' => ['127.0.0.1', '::1', '172.27.0.1'],
     ];
 
     $config['bootstrap'][] = 'gii';
     $config['modules']['gii'] = [
         'class' => 'yii\gii\Module',
         // uncomment the following to add your IP if you are not connecting from localhost.
-        //'allowedIPs' => ['127.0.0.1', '::1'],
+        'allowedIPs' => ['127.0.0.1', '::1', '*'],
     ];
 }
 
