@@ -13,10 +13,21 @@ use yii\web\IdentityInterface;
  * @property string $login
  * @property string $password
  * @property string $email
- * @property string $username
  */
 class User extends ActiveRecord implements IdentityInterface
 {
+    /**
+     * @return array
+     */
+    public function rules(): array
+    {
+        return [
+            [['login', 'email', 'password'], 'required'],
+            [['login'], 'string', 'max' => 255],
+            [['email'], 'email'],
+        ];
+    }
+
     /**
      * @return string
      */
@@ -112,5 +123,13 @@ class User extends ActiveRecord implements IdentityInterface
         }
 
         parent::afterSave($insert, $changedAttributes);
+    }
+
+    /**
+     * @return static
+     */
+    public static function create(): static
+    {
+        return new static();
     }
 }

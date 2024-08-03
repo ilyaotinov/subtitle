@@ -8,6 +8,7 @@ use yii\web\JsonParser;
 
 $params = require __DIR__ . '/params.php';
 $db = require __DIR__ . '/db.php';
+$url = require_once __DIR__ . '/url.php';
 
 $config = [
     'id' => 'basic',
@@ -59,17 +60,7 @@ $config = [
             ],
         ],
         'db' => $db,
-        'urlManager' => [
-            'enablePrettyUrl' => true,
-            'showScriptName' => false,
-            'enableStrictParsing' => true,
-            'rules' => [
-                'POST auth/login' => 'auth/login',
-                'GET /' => 'site/index',
-                'POST,DELETE auth/refresh-token' => 'auth/refresh-token',
-            ],
-        ],
-
+        'urlManager' => $url,
         'jwt' => [
             'class' => Jwt::class,
             'key' => 'it-is-my-secret-key-and-it-is-long-enough-to-be-secure',

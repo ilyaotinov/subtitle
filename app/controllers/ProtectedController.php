@@ -25,6 +25,7 @@ class ProtectedController extends Controller
                 'debug',
                 'index',
                 'refresh-token',
+                'delete-refresh-token',
             ],
         ];
 

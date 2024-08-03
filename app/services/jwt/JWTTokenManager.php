@@ -7,7 +7,7 @@ use app\models\UserRefreshToken;
 
 interface JWTTokenManager
 {
-    public function generateRefreshToken(User $user,): UserRefreshToken;
+    public function generateRefreshToken(): string;
 
     public function generateJwt(User $user): string;
 }

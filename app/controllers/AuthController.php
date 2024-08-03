@@ -3,10 +3,12 @@
 namespace app\controllers;
 
 use app\models\LoginForm;
-use app\models\User;
-use app\models\UserRefreshToken;
 use app\services\auth\AuthService;
+use Throwable;
 use Yii;
+use yii\base\InvalidConfigException;
+use yii\db\Exception;
+use yii\db\StaleObjectException;
 use yii\web\Cookie;
 use yii\web\ServerErrorHttpException;
 use yii\web\UnauthorizedHttpException;
@@ -16,24 +18,30 @@ use yii\web\UnauthorizedHttpException;
  */
 class AuthController extends ProtectedController
 {
-    public function __construct($id, $module, $config = [])
+    public function __construct($id, $module, private AuthService $authService, $config = [])
     {
         parent::__construct($id, $module, $config);
     }
 
-    public function actionLogin(AuthService $authService)
+    /**
+     * @return array
+     * @throws Exception
+     * @throws InvalidConfigException
+     * @throws ServerErrorHttpException
+     * @throws UnauthorizedHttpException
+     */
+    public function actionLogin(): array
     {
         $model = new LoginForm();
         if ($model->load(Yii::$app->request->getBodyParams(), 'data') && $model->login()) {
             $user = Yii::$app->user->identity;
 
-            $token = $authService->login($user);
-            $refreshToken = $authService->generateRefreshToken($user);
+            $tokens = $this->authService->login($user, Yii::$app->request->userAgent, Yii::$app->request->userIP);
 
             Yii::$app->response->cookies->add(
                 new Cookie([
                     'name' => 'refresh-token',
-                    'value' => $refreshToken->token,
+                    'value' => $tokens->refreshToken,
                     'httpOnly' => true,
                     'sameSite' => 'none',
                     'secure' => false,
@@ -42,51 +50,44 @@ class AuthController extends ProtectedController
             );
 
             return [
-                'token' => $token,
+                'token' => $tokens->token,
             ];
         }
 
-        return new UnauthorizedHttpException('given creds is invalid');
+        throw new UnauthorizedHttpException('given creds is invalid');
     }
 
-    public function actionRefreshToken(AuthService $authService)
+    /**
+     * @return array|UnauthorizedHttpException
+     * @throws StaleObjectException
+     * @throws Throwable
+     * @throws UnauthorizedHttpException
+     */
+    public function actionRefreshToken()
     {
         $refreshToken = Yii::$app->request->cookies->getValue('refresh-token', false);
         if (! $refreshToken) {
             return new UnauthorizedHttpException('No refresh token found.');
         }
 
-        $userRefreshToken = UserRefreshToken::findOne(['token' => $refreshToken]);
+        $token = $this->authService->refreshToken($refreshToken);
 
-        if (Yii::$app->request->getMethod() == 'POST') {
-            if (! $userRefreshToken) {
-                return new UnauthorizedHttpException('The refresh token no longer exists.');
-            }
+        return [
+            'status' => 'ok',
+            'token' => $token,
+        ];
+    }
 
-            /** @var User $user */
-            $user = User::find()
-                ->where(['id' => $userRefreshToken->user_id])
-                ->andWhere(['not', ['status' => 'inactive']])
-                ->one();
-            if (! $user) {
-                $userRefreshToken->delete();
-                return new UnauthorizedHttpException('The user is inactive.');
-            }
+    /**
+     * @throws Throwable
+     * @throws StaleObjectException
+     * @throws ServerErrorHttpException
+     */
+    public function actionDeleteRefreshToken(): array
+    {
+        $refreshToken = Yii::$app->request->cookies->getValue('refresh-token', false);
+        $this->authService->deleteRefreshToken($refreshToken);
 
-            $token = $authService->generateToken($user);
-
-            return [
-                'status' => 'ok',
-                'token' => $token,
-            ];
-        } elseif (Yii::$app->request->getMethod() == 'DELETE') {
-            if ($userRefreshToken && ! $userRefreshToken->delete()) {
-                return new ServerErrorHttpException('Failed to delete the refresh token.');
-            }
-
-            return ['status' => 'ok'];
-        } else {
-            return new UnauthorizedHttpException('The user is inactive.');
-        }
+        return ['status' => 'ok'];
     }
 }
